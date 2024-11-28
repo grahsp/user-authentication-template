@@ -132,6 +132,46 @@ namespace UserAuthenticationTemplate.Tests
         }
         #endregion
 
+        #region Password Tests
+        [TestMethod]
+        public void Password_RequiredLength_ShouldNotBeLessOrEqualZero()
+        {
+            var idConfig = new IdentityConfig();
+
+            idConfig.Password.RequiredLength = 0;
+
+            Assert.IsTrue(idConfig.Password.RequiredLength > 0,
+                "RequiredLength should have a minimum value set greater than zero.");
+        }
+
+        [TestMethod]
+        public void Password_RequiredUniqueChars_ShoulNotBeLessOrEqualZero()
+        {
+            var idConfig = new IdentityConfig();
+
+            idConfig.Password.RequiredUniqueChars = 0;
+
+            Assert.IsTrue(idConfig.Password.RequiredUniqueChars > 0,
+                "RequiredUniqueChars should have a minimum value set greater than zero.");
+        }
+
+        [TestMethod]
+        public void Password_RequiredLength_GreaterThan_RequiredUniqueChars()
+        {
+            var idConfig = new IdentityConfig();
+            var minLength = 6;
+            var minRequired = 79582;
+
+            idConfig.Password.RequiredLength = minLength;
+            idConfig.Password.RequiredUniqueChars = minRequired;
+
+            Assert.IsTrue(idConfig.Password.RequiredLength >= idConfig.Password.RequiredUniqueChars,
+                "RequiredLength should always be greater or equal to RequiredUniqueChars.");
+            Assert.AreEqual(idConfig.Password.RequiredUniqueChars, minLength,
+                "RequiredUniqueChars should be set to RequiredLength if too large a value was set.");
+        }
+        #endregion
+
         #region User Tests
         [TestMethod]
         public void UserConfig_AllowedUsernameCharacters_ShouldNotBeEmptyOrNull()
