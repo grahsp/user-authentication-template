@@ -1,5 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using UserAuthenticationTemplate.Data;
+using UserAuthenticationTemplate.Configs.Identity;
 
 namespace UserAuthenticationTemplate
 {
@@ -10,16 +9,16 @@ namespace UserAuthenticationTemplate
             // -- Service --
             var builder = WebApplication.CreateBuilder(args);
 
+            // Configurations
+            var identityConfigurationSection = builder.Configuration.GetSection("Identity");
+            builder.Services.Configure<IdentityConfig>(identityConfigurationSection);
+
             // This should be removed before moving to production and content inside of
             // appsettings.Secret.json Should be stored in a more secure way.
             builder.Configuration
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.Secret.json", optional: false, reloadOnChange: true);
 
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityDbConnectionString"));
-            });
 
 
             // -- Middleware --
