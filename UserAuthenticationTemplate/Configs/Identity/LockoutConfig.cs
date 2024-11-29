@@ -19,7 +19,7 @@
         public int DefaultLockoutInMinutes
         {
             get => (int)Math.Ceiling(DefaultLockoutTimeSpan.TotalMinutes);
-            set => DefaultLockoutTimeSpan = value > 0 ? TimeSpan.FromMinutes(value) : TimeSpan.Zero;
+            set => DefaultLockoutTimeSpan = TimeSpan.FromMinutes(value);
         }
 
         // Timespan method should be last in order to overwrite others (incase multiple lockout times are set)
