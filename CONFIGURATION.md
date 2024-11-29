@@ -60,3 +60,37 @@ The `IdentityConfig` object is used to configure the behavior of identity and au
   }
 }
 ```
+
+## JwtConfig
+
+The `JwtConfig` class is used to configure the JWT (JSON Web Token) settings for authentication. It provides properties to set various aspects of token creation, validation, and expiration.
+
+### Properties
+
+ -  `Secret`* (string?):
+A secret key used to sign the JWT token. This is crucial for validating the authenticity of the token during authentication. It is recommended to store this in a secure environment.
+<br>An InvalidOperationException will be thrown if this is null or empty at startup.
+>IMPORTANT: You can store your secret in appsettings.Secret.json during development but NOT for production!
+<br>Be careful not to commit it by accident.
+ -  `Audience` (string):
+The intended recipient(s) of the JWT token. This value is typically the service or API that is expecting the token. Default: `""`.
+ -  `Issuer` (string):
+The issuer of the JWT token. This is usually the identity of the issuing service (e.g., your authentication service or API). Default: `""`.
+ -  `ValidateAudience`, `ValidateIssuer` (bool): Cannot be set directly but is dependant on the values of `Audience` and `Issuer`. If one is the validation is set to `false`.
+ -  `ExpiresInMinutes` (int):
+The number of minutes after which the token will expire. This helps control the lifetime of the token for security purposes. Default: `30`.
+ -  `ClockSkew` (TimeSpan):
+The underlying TimeSpan value representing the tolerance for the token's expiration time validation. Cannot be set to less than 0. Default: `"00:05:00"`
+<br>Can also be set using `ClockSkewInMinutes` (int).
+Example of what appsettings.Development.json might look like:
+
+```json
+{
+  "Jwt": {
+    "Audience": "localhost",
+    "Issuer": "localhost",
+    "ExpiresInMinutes": 30,
+    "ClockSkewInMinutes": 2
+  }
+}
+```
