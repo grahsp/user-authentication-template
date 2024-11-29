@@ -3,7 +3,7 @@ using UserAuthenticationTemplate.Configs.Identity;
 namespace UserAuthenticationTemplate.Tests
 {
     [TestClass]
-    public class IdentityConfigurationTests
+    public class IdentityConfigTests
     {
         #region Identity Tests
         [TestMethod]
