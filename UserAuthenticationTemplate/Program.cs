@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using UserAuthenticationTemplate.Configs;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Data;
 using UserAuthenticationTemplate.Models;
@@ -16,6 +20,8 @@ namespace UserAuthenticationTemplate
             // Configurations
             var identityConfigurationSection = builder.Configuration.GetSection("Identity");
             builder.Services.Configure<IdentityConfig>(identityConfigurationSection);
+            var jwtConfigurationSection = builder.Configuration.GetSection("Jwt");
+            builder.Services.Configure<JwtConfig>(jwtConfigurationSection);
 
             // This should be removed before moving to production and content inside of
             // appsettings.Secret.json Should be stored in a more secure way.
@@ -67,10 +73,38 @@ namespace UserAuthenticationTemplate
             .AddDefaultTokenProviders();
 
 
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                var jwtConfig = jwtConfigurationSection.Get<JwtConfig>();
+
+                if (string.IsNullOrEmpty(jwtConfig?.Secret))
+                    throw new InvalidOperationException("JWT Secret is missing from configuration!");
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = jwtConfig.ValidateIssuer,
+                    ValidateAudience = jwtConfig.ValidateAudience,
+                    ValidIssuer = jwtConfig.Issuer,
+                    ValidAudience = jwtConfig.Audience,
+                    ClockSkew = jwtConfig.ClockSkew,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.Secret))
+                };
+            });
+
+
             // -- Middleware --
             var app = builder.Build();
 
             app.UseHttpsRedirection();
+
+            app.UseAuthentication();
 
             app.Run();
         }
