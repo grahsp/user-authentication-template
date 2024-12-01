@@ -21,7 +21,10 @@ namespace UserAuthenticationTemplate.Services
         public async Task<IdentityResult> RegisterUserAsync(RegistrationRequest request)
         {
             if (request.Password != request.ConfirmPassword)
+            {
+                _logger.LogWarning("Failed to register '{Email}' due to a password missmatch", request.Email);
                 return IdentityResult.Failed(new IdentityError { Description = "Passwords do not match." });
+            }
 
             var newUser = new ApplicationUser
             {
