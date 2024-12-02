@@ -45,5 +45,30 @@ namespace UserAuthenticationTemplate.Services
 
             return result;
         }
+
+        public async Task<IdentityResult> LoginUserAsync(LoginRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                _logger.LogWarning("User '{Email}' not found.", request.Email);
+                return IdentityResult.Failed(new IdentityError { Description = $"User '{ request.Email }' not found." });
+            }
+
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
+
+            if (isPasswordValid)
+            {
+                // Logic that should execute if successful goes here..
+                _logger.LogInformation("User '{Email}' succesfully logged in.", user.Email);
+
+                return IdentityResult.Success;
+            }
+            else
+            {
+                _logger.LogWarning("User '{Email}' failed to login with incorrect password.", user.Email);
+                return IdentityResult.Failed(new IdentityError { Description = $"User '{user.Email} failed to login." });
+            }
+        }
     }
 }
