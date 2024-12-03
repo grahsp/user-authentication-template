@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Models;
 using UserAuthenticationTemplate.Services;
 
@@ -7,6 +8,12 @@ namespace UserAuthenticationTemplate.Tests.Mocks
     internal class MockUserManager : IUserManager<ApplicationUser>
     {
         private List<ApplicationUser> _users = [];
+        private readonly IdentityConfig _identityConfig;
+
+        public MockUserManager(IdentityConfig identityConfig)
+        {
+            _identityConfig = identityConfig;
+        }
 
         public Task<bool> CheckPasswordAsync(ApplicationUser user, string password)
         {
@@ -19,6 +26,7 @@ namespace UserAuthenticationTemplate.Tests.Mocks
             if (userExists)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "User already exists!" }));
 
+            user.Id = Guid.NewGuid();
             user.PasswordHash = password;
             _users.Add(user);
 
@@ -41,6 +49,31 @@ namespace UserAuthenticationTemplate.Tests.Mocks
         {
             var user = _users.FirstOrDefault(u => u.UserName == username);
             return Task.FromResult(user);
+        }
+
+        public async Task<IdentityResult> AccessFailedCountAsync(ApplicationUser user)
+        {
+            var selectUser = await FindByEmailAsync(user.Email!);
+
+            if (selectUser != null)
+            {
+                selectUser.AccessFailedCount++;
+                if (selectUser.AccessFailedCount >= _identityConfig.Lockout.MaxFailedAccessAttempts)
+                {
+                    selectUser.LockoutEnd = DateTimeOffset.Now.AddMinutes(_identityConfig.Lockout.DefaultLockoutTimeSpan.TotalMinutes);
+                }
+
+                return IdentityResult.Success;
+            }
+
+            return IdentityResult.Failed();
+        }
+
+        public async Task<bool> IsLockedOutAsync(ApplicationUser user)
+        {
+            var selectUser = await FindByEmailAsync(user.Email!);
+
+            return selectUser?.LockoutEnd > DateTime.Now;
         }
     }
 }

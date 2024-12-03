@@ -12,6 +12,11 @@ namespace UserAuthenticationTemplate.Services
             _userManager = userManager;
         }
 
+        public Task<IdentityResult> AccessFailedCountAsync(ApplicationUser user)
+        {
+            return _userManager.AccessFailedAsync(user);
+        }
+
         public Task<bool> CheckPasswordAsync(ApplicationUser user, string password)
         {
             return _userManager.CheckPasswordAsync(user, password);
@@ -35,6 +40,26 @@ namespace UserAuthenticationTemplate.Services
         public Task<ApplicationUser?> FindByNameAsync(string username)
         {
             return _userManager.FindByNameAsync(username);
+        }
+
+        public Task<int> GetAccessFailedCountAsync(ApplicationUser user)
+        {
+            return _userManager.GetAccessFailedCountAsync(user);
+        }
+
+        public Task<bool> IsLockedOutAsync(ApplicationUser user)
+        {
+            return _userManager.IsLockedOutAsync(user);
+        }
+
+        public Task<IdentityResult> ResetAccessFailedCountAsync(ApplicationUser user)
+        {
+            return _userManager.ResetAccessFailedCountAsync(user);
+        }
+
+        public Task<IdentityResult> SetLockoutEndDateAsync(ApplicationUser user, DateTimeOffset? lockoutEnd)
+        {
+            return _userManager.SetLockoutEndDateAsync(user, lockoutEnd);
         }
     }
 }
