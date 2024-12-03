@@ -17,7 +17,7 @@ namespace UserAuthenticationTemplate.Tests
 
         public UserAccountServiceTests()
         {
-            var userManager = new MockUserManager();
+            var userManager = new MockUserManager(_identityConfig);
             _logger = new MockLogger<UserAccountService>();
             _userAccount = new(userManager, _logger, Options.Create(_identityConfig));
         }
@@ -77,6 +77,69 @@ namespace UserAuthenticationTemplate.Tests
 
             var result = await LoginUserAsync("test@gmail.com", "test123");
             Assert.IsTrue(result.Succeeded);
+        }
+
+        // -- Lockout Tets --
+
+        [TestMethod]
+        public async Task LoginUserAsync_ShouldLock_IfTooManyFailedAttempts()
+        {
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 5;
+
+            var registered = await RegisterUserAsync("test@gmail.com", "test123");
+            Assert.IsTrue(registered.Succeeded);
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts; i++)
+            {
+                await LoginUserAsync("test@gmail.com", "test321");
+            }
+
+            var result = await LoginUserAsync("test@gmail.com", "test123");
+
+            Assert.IsFalse(result.Succeeded);
+        }
+
+        [TestMethod]
+        public async Task LoginUserAsync_ShoulSucceed_IfAttemptsAreLessThanMax()
+        {
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+
+            var registered = await RegisterUserAsync("test@gmail.com", "test123");
+            Assert.IsTrue(registered.Succeeded);
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts - 1; i++)
+            {
+                await LoginUserAsync("test@gmail.com", "test321");
+            }
+
+            var result = await LoginUserAsync("test@gmail.com", "test123");
+
+            Assert.IsTrue(result.Succeeded);
+        }
+
+        [TestMethod]
+        public async Task LoginUserAsync_ShoulUnlockAfterLockoutEnds_IfAccountIsLocked()
+        {
+            var ms = 250;   // Milliseconds to lock user out and time to sleep
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _identityConfig.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMilliseconds(ms);
+
+            var registered = await RegisterUserAsync("test@gmail.com", "test123");
+            Assert.IsTrue(registered.Succeeded);
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts; i++)
+            {
+                await LoginUserAsync("test@gmail.com", "test321");
+            }
+
+            var resultBefore = await LoginUserAsync("test@gmail.com", "test123");
+            Assert.IsFalse(resultBefore.Succeeded);
+
+            Thread.Sleep(ms);
+
+            var resultAfter = await LoginUserAsync("test@gmail.com", "test123");
+            Assert.IsTrue(resultAfter.Succeeded);
         }
         #endregion
 
