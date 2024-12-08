@@ -77,14 +77,51 @@ namespace UserAuthenticationTemplate.Tests
         }
 
         [TestMethod]
-        public void IdentityResultConversion_ShouldCreateEqualResult()
+        public void IdentityResultConversion_ShouldCreateSuccessfulResult()
         {
-            var identityResult = IdentityResult.Failed(new IdentityError { Description = "An error occured" }, new IdentityError { Description = "A second error occured too!" });
+            var identityResult = IdentityResult.Success;
+            var result = identityResult.ToResult();
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.Errors.Count > 0);
+        }
+
+        [TestMethod]
+        public void IdentityResultConversion_ShouldCreateFailedResult()
+        {
+            var error1 = "An error occured";
+            var error2 = "A second error occured too!";
+            var identityResult = IdentityResult.Failed(new IdentityError { Description = error1 }, new IdentityError { Description = error2 });
             var result = identityResult.ToResult();
 
             Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains("An error occured"));
-            Assert.IsTrue(result.Errors.Contains("A second error occured too!"));
+            Assert.IsTrue(result.Errors.Contains(error1));
+            Assert.IsTrue(result.Errors.Contains(error2));
+        }
+
+        [TestMethod]
+        public void IdentityResultConversion_WithData_ShouldCreateSuccessfulResult()
+        {
+            var value = 42;
+            var identityResult = IdentityResult.Success;
+            var result = identityResult.ToResult(value);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.Data, value);
+            Assert.IsFalse(result.Errors.Count > 0);
+        }
+
+        [TestMethod]
+        public void IdentityResultConversion_WithData_ShouldCreateFailedResult()
+        {
+            var value = 42;
+            var error1 = "An error occured";
+            var identityResult = IdentityResult.Failed(new IdentityError { Description = error1 });
+            var result = identityResult.ToResult(value);
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.AreEqual(result.Data, value);
+            Assert.IsTrue(result.Errors.Contains(error1));
         }
     }
 }
