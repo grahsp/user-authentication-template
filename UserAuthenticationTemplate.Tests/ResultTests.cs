@@ -1,4 +1,7 @@
-﻿using UserAuthenticationTemplate.Models;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel;
+using UserAuthenticationTemplate.Extensions;
+using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Tests
 {
@@ -71,6 +74,17 @@ namespace UserAuthenticationTemplate.Tests
             Assert.IsTrue(result.IsSuccess);
             Assert.IsFalse(result.IsFailure);
             Assert.AreEqual(value, result.Data);
+        }
+
+        [TestMethod]
+        public void IdentityResultConversion_ShouldCreateEqualResult()
+        {
+            var identityResult = IdentityResult.Failed(new IdentityError { Description = "An error occured" }, new IdentityError { Description = "A second error occured too!" });
+            var result = identityResult.ToResult();
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Contains("An error occured"));
+            Assert.IsTrue(result.Errors.Contains("A second error occured too!"));
         }
     }
 }
