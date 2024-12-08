@@ -9,5 +9,10 @@ namespace UserAuthenticationTemplate.Extensions
         {
             return new Result(result.Succeeded, result.Errors.Select(e => e.Description).ToArray());
         }
+
+        public static Result<T> ToResult<T>(this IdentityResult result, T Data)
+        {
+            return new Result<T>(result.Succeeded, Data, result.Errors.Select(e => e.Description).ToArray());
+        }
     }
 }
