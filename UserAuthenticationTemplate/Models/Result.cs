@@ -33,7 +33,7 @@
         {
             return IsSuccess
                 ? $"Success"
-                : $"Failure: {Errors}";
+                : $"Failure: {string.Join(", ", Errors)}";
         }
     }
 
@@ -62,7 +62,7 @@
         {
             return IsSuccess
                 ? $"Success: {Data}"
-                : $"Failure: {Errors}";
+                : $"Failure: {string.Join(", ", Errors)}";
         }
     }
 }
