@@ -1,172 +1,300 @@
-﻿using Microsoft.AspNetCore.Identity;
-using UserAuthenticationTemplate.Extensions;
-using UserAuthenticationTemplate.Models;
+﻿using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Tests
 {
     [TestClass]
     public class ResultTests
     {
+        #region Constructor
+        // Result
         [TestMethod]
-        public void Success_ShouldCreateSuccessfulResult()
+        public void Result_Constructor_Success_ShouldInitializeCorrectly()
+        {
+            var result = new Result(true);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.HasErrors);
+        }
+
+        [TestMethod]
+        public void Result_Constructor_FailureWithErrors_ShouldInitializeCorrectly()
+        {
+            var result = new Result(false, "ERROR");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+        }
+
+        [TestMethod]
+        public void Result_Constructor_FailreWithManyErrors_ShouldInitializeCorrectly()
+        {
+            var result = new Result(false, "Error1", "Error2", "Error3");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Length == 3);
+        }
+
+        // Result<T>
+        [TestMethod]
+        public void ResultT_Constructor_SuccessWithValidData_ShouldInitializeCorrectly()
+        {
+            var result = new Result<int>(true, 42);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.HasErrors);
+        }
+
+        [TestMethod]
+        public void Result_Constructor_SuccessWithNullData_ShouldThrowArgumentNullException()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => new Result<string>(true, null));
+        }
+
+        [TestMethod]
+        public void ResultT_Constructor_FailureWithErrors_ShouldInitializeCorrectly()
+        {
+            var result = new Result<string>(false, null, "ERROR");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+        }
+        #endregion
+
+        #region Properties
+        // Result
+        [TestMethod]
+        public void IsFailure_OppositeOfIsSuccess()
+        {
+            var result = Result.Success();
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.IsSuccess, !result.IsFailure);
+
+            result = Result.Failure("Error");
+            Assert.IsTrue(result.IsFailure);
+            Assert.AreEqual(!result.IsSuccess, result.IsFailure);
+        }
+
+        [TestMethod]
+        public void HasErrors_WhenResultHasError_ShouldBeTrue()
+        {
+            var result = Result.Success();
+            Assert.IsFalse(result.HasErrors);
+
+            result = Result.Failure("Error");
+            Assert.IsTrue(result.HasErrors);
+        }
+
+        // Result<T>
+        [TestMethod]
+        public void Data_WhenResultIsSuccessful_ShouldReturnData()
+        {
+            var result = new Result<int>(true, 42);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.Data, 42);
+        }
+
+        [TestMethod]
+        public void Data_WhenResultIsFailed_ShouldThrowArgumentNullException()
+        {
+            var result = new Result<int>(false, 42);
+
+            Assert.ThrowsException<ArgumentNullException>(() => result.Data);
+        }
+        #endregion
+
+        #region Factory Methods
+        // Result
+        [TestMethod]
+        public void Result_Success_ShouldCreateSuccessfulResult()
         {
             var result = Result.Success();
 
             Assert.IsTrue(result.IsSuccess);
-            Assert.IsFalse(result.IsFailure);
-            Assert.IsFalse(result.Errors.Length > 0);
+            Assert.IsFalse(result.HasErrors);
         }
 
         [TestMethod]
-        public void Failure_ShouldCreateFailedResult_WithErrorMessage()
+        public void Result_Failure_ShouldCreateFailureResult()
         {
-            var errorMessage = "An error occurred";
-            var result = Result.Failure(errorMessage);
+            var result = Result.Failure("Error");
 
-            Assert.IsFalse(result.IsSuccess);
             Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains(errorMessage));
+            Assert.IsTrue(result.HasErrors);
         }
 
+        // Result<T>
         [TestMethod]
-        public void Success_WithData_ShouldCreateSuccessfulResultWithData()
+        public void ResultT_Success_ShouldCreateSuccessfulResult_WithData()
         {
             var value = 42;
             var result = Result<int>.Success(value);
 
             Assert.IsTrue(result.IsSuccess);
-            Assert.IsFalse(result.IsFailure);
-            Assert.AreEqual(value, result.Data);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(result.Data, value);
         }
 
         [TestMethod]
-        public void Failure_ShouldCreateFailedResult_WithErrorMessageAndNoData()
+        public void ResultT_Failure_ShouldCreateFailureResult_WithoutErrors()
         {
-            var errorMessage = "Something went wrong";
-            var result = Result<string>.Failure(errorMessage);
+            var result = Result<int>.Failure("Error");
 
-            Assert.IsFalse(result.IsSuccess);
             Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains(errorMessage));
+            Assert.IsTrue(result.HasErrors);
         }
+        #endregion
 
+        #region Methods
+        // Result
         [TestMethod]
-        public void Failure_WithMultipleErrors_ShouldIncludeAllErrors()
+        public void Result_Merge_ShouldReturnTrue_WhenAllValuesAreTrue()
         {
-            var result = Result.Failure("Error 1", "Error 2", "Error 3");
+            var success = Result.Merge(true, true, true);
 
-            Assert.IsFalse(result.IsSuccess);
-            Assert.IsTrue(result.IsFailure);
-            Assert.AreEqual(3, result.Errors.Length);
-            Assert.IsTrue(result.Errors.Contains("Error 1"));
-            Assert.IsTrue(result.Errors.Contains("Error 2"));
-            Assert.IsTrue(result.Errors.Contains("Error 3"));
+            Assert.IsTrue(success);
         }
 
         [TestMethod]
-        public void ImplicitConversion_ShouldCreateSuccessfulResultWithData()
+        public void Result_Merge_ShouldReturnFalse_WhenAnyValueIsFalse()
+        {
+            var success = Result.Merge(true, true, false);
+
+            Assert.IsFalse(success);
+        }
+
+        [TestMethod]
+        public void Result_Merge_ShouldReturnTrue_WhenSuccessfulResult()
+        {
+            var result = Result.Success();
+            var success = Result.Merge(true, true, result);
+
+            Assert.IsTrue(success);
+        }
+
+        [TestMethod]
+        public void Result_Merge_ShouldReturnFalse_WhenFailedResult()
+        {
+            var result = Result.Failure();
+            var success = Result.Merge(true, true, result);
+
+            Assert.IsFalse(success);
+        }
+
+        [TestMethod]
+        public void Result_Merge_ShouldReturnTrue_WhenSuccessfulResultT()
+        {
+            var result = Result<int>.Success(42);
+            var success = Result.Merge(true, true, result);
+
+            Assert.IsTrue(success);
+        }
+
+        [TestMethod]
+        public void Result_Merge_ShouldReturnFalse_WhenFailedResultT()
+        {
+            var result = Result<int>.Failure();
+            var success = Result.Merge(true, true, result);
+
+            Assert.IsFalse(success);
+        }
+
+        // Result<T>
+        [TestMethod]
+        public void ResultT_FromData_ShouldCreateSuccessfulResult_WhenDataNotNull()
+        {
+            var value = 42;
+            var result = Result<int>.FromData(value);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.Data, value);
+        }
+
+        [TestMethod]
+        public void ResultT_FromData_ShouldCreateFailedResult_WhenDataNull()
+        {
+            var result = Result<string>.FromData(null);
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.ThrowsException<ArgumentNullException>(() => result.Data);
+        }
+        #endregion
+
+        #region Implicit Conversion
+        // Result
+        [TestMethod]
+        public void Result_ImplicitConversion_ReturnTrue_WhenSuccessfulResult()
+        {
+            bool success = Result.Success();
+
+            Assert.IsTrue(success);
+        }
+
+        [TestMethod]
+        public void Result_ImplicitConversion_ReturnFalse_WhenFailedResult()
+        {
+            bool success = Result.Failure();
+
+            Assert.IsFalse(success);
+        }
+
+        // Result<T>
+        [TestMethod]
+        public void ResultT_ImplicitConversion_SuccessfulResult_WhenDataIsNotNull()
         {
             var value = 42;
             Result<int> result = value;
 
             Assert.IsTrue(result.IsSuccess);
-            Assert.IsFalse(result.IsFailure);
-            Assert.AreEqual(value, result.Data);
-        }
-
-        #region Identity Extension
-        [TestMethod]
-        public void IdentityResultConversion_ShouldCreateSuccessfulResult()
-        {
-            var identityResult = IdentityResult.Success;
-            var result = identityResult.ToResult();
-
-            Assert.IsTrue(result.IsSuccess);
-            Assert.IsFalse(result.Errors.Length > 0);
-        }
-
-        [TestMethod]
-        public void IdentityResultConversion_ShouldCreateFailedResult()
-        {
-            var error1 = "An error occured";
-            var error2 = "A second error occured too!";
-            var identityResult = IdentityResult.Failed(new IdentityError { Description = error1 }, new IdentityError { Description = error2 });
-            var result = identityResult.ToResult();
-
-            Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains(error1));
-            Assert.IsTrue(result.Errors.Contains(error2));
-        }
-
-        [TestMethod]
-        public void IdentityResultConversion_WithData_ShouldCreateSuccessfulResult()
-        {
-            var value = 42;
-            var identityResult = IdentityResult.Success;
-            var result = identityResult.ToResult(value);
-
-            Assert.IsTrue(result.IsSuccess);
             Assert.AreEqual(result.Data, value);
-            Assert.IsFalse(result.Errors.Length > 0);
         }
 
         [TestMethod]
-        public void IdentityResultConversion_WithData_ShouldCreateFailedResult()
+        public void ResultT_ImplicitConversion_ThrowArgumentNullException_WhenDataIsNull()
         {
-            var value = 42;
-            var error1 = "An error occured";
-            var identityResult = IdentityResult.Failed(new IdentityError { Description = error1 });
-            var result = identityResult.ToResult(value);
-
-            Assert.IsTrue(result.IsFailure);
-            Assert.AreEqual(result.Data, value);
-            Assert.IsTrue(result.Errors.Contains(error1));
+            Result<string> result;
+            Assert.ThrowsException<ArgumentNullException>(() => result = (string)null!);
         }
         #endregion
 
+        #region ToString
+        // Result
         [TestMethod]
-        public void FromData_WithNullData_ShouldCreateFailedResult()
+        public void Result_ToString_ReturnSuccessString_WhenSuccessfulResult()
         {
-            var errorMessage = "Tried to create result using null for data!";
-            var result = Result<string>.FromData(null, errorMessage);
+            var result = Result.Success();
 
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains(errorMessage));
-        }
-
-        [TestMethod]
-        public void CreateResult_WithNull_ShouldCreateFailedResult()
-        {
-            var errorMessage = "Tried to create result using null for data!";
-            string? value = null;
-            Result<string> result = value.CreateResult(errorMessage);
-
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.IsFailure);
-            Assert.IsTrue(result.Errors.Contains(errorMessage));
-        }
-
-        [TestMethod]
-        public void CreateResult_WithDefault_ShouldCreateSuccessfulResult()
-        {
-            int value = default;
-            Result<int> result = value.CreateResult();
-
-            Assert.IsNotNull(result);
             Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.ToString(), "Success");
         }
 
         [TestMethod]
-        public void CreateResult_WithDefaultReferenceType_ShouldCreateFailedResult()
+        public void Result_ToString_ReturnFailureString_WhenFailedReslt()
         {
-            var errorMessage = "An error occured!";
-            List<int>? value = default;
-            Result<List<int>> result = value.CreateResult(errorMessage);
+            var result = Result.Failure("Error1", "Error2", "Error3");
 
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.IsSuccess);
-            Assert.IsTrue(result.Errors.Contains(errorMessage));
+            Assert.IsTrue(result.IsFailure);
+            Assert.AreEqual(result.ToString(), "Failure: Error1, Error2, Error3");
         }
+
+        // Result<T>
+        [TestMethod]
+        public void ResultT_ToString_ReturnSuccessString_WhenSuccessfulResult()
+        {
+            var result = Result<int>.Success(42);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(result.ToString(), "Success: 42");
+        }
+
+        [TestMethod]
+        public void ResultT_ToString_ReturnFailureString_WhenFailedResult()
+        {
+            var result = Result<int>.Failure("Error1", "Error2", "Error3");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.AreEqual(result.ToString(), "Failure: Error1, Error2, Error3");
+        }
+        #endregion
     }
 }
