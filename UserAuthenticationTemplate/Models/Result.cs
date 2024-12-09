@@ -4,7 +4,7 @@
     {
         public bool IsSuccess { get; private set; }
         public bool IsFailure { get => !IsSuccess; }
-        public List<string> Errors { get; private set; }
+        public string[] Errors { get; private set; }
 
         public ResultBase(bool success, params string[] errors)
         {
@@ -39,14 +39,15 @@
 
     public class Result<T> : ResultBase
     {
-        public T? Data { get; private set; }
+        private T? _data;
+        public T Data { get => _data ?? throw new ArgumentNullException(nameof(Data), "Cannot access data if result is failed"); }
 
         public Result(bool success, T? data = default, params string[] errors) : base(success, errors)
         {
             if (success && data == null)
                 throw new ArgumentNullException(nameof(data), "Result cannot be set to success with null data!");
 
-            Data = data;
+            _data = data;
         }
 
         public static Result<T> Success(T data)
