@@ -59,7 +59,7 @@
             return new(false, default, errors);
         }
 
-        public static Result<T> FromData(T? data, string failureMessage = "Data is null")
+        public static Result<T> FromData(T? data, string failureMessage = "Data must not be null")
         {
             return data != null
             ? Success(data)
@@ -73,6 +73,16 @@
             return IsSuccess
                 ? $"Success: {Data}"
                 : $"Failure: {string.Join(", ", Errors)}";
+        }
+    }
+
+    public static class ResultExtensions
+    {
+        public static Result<T> CreateResult<T>(this T? data, string failureMessage = "Data must not be null")
+        {
+            return data != null
+                ? Result<T>.Success(data)
+                : Result<T>.Failure(failureMessage);
         }
     }
 }
