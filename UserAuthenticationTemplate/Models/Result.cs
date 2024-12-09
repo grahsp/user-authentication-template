@@ -11,6 +11,8 @@
             IsSuccess = success;
             Errors = [.. errors];
         }
+
+        public static implicit operator bool(ResultBase result) => result.IsSuccess;
     }
 
     public class Result : ResultBase
@@ -27,6 +29,11 @@
         public static Result Failure(params string[] errors)
         {
             return new(false, errors);
+        }
+
+        public static bool Merge(params bool[] results)
+        {
+            return !results.Any(r => r == false);
         }
 
         public override string ToString()
