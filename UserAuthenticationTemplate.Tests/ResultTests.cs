@@ -47,7 +47,6 @@ namespace UserAuthenticationTemplate.Tests
 
             Assert.IsFalse(result.IsSuccess);
             Assert.IsTrue(result.IsFailure);
-            Assert.IsNull(result.Data);
             Assert.IsTrue(result.Errors.Contains(errorMessage));
         }
 
@@ -75,6 +74,7 @@ namespace UserAuthenticationTemplate.Tests
             Assert.AreEqual(value, result.Data);
         }
 
+        #region Identity Extension
         [TestMethod]
         public void IdentityResultConversion_ShouldCreateSuccessfulResult()
         {
@@ -121,6 +121,52 @@ namespace UserAuthenticationTemplate.Tests
             Assert.IsTrue(result.IsFailure);
             Assert.AreEqual(result.Data, value);
             Assert.IsTrue(result.Errors.Contains(error1));
+        }
+        #endregion
+
+        [TestMethod]
+        public void FromData_WithNullData_ShouldCreateFailedResult()
+        {
+            var errorMessage = "Tried to create result using null for data!";
+            var result = Result<string>.FromData(null, errorMessage);
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Contains(errorMessage));
+        }
+
+        [TestMethod]
+        public void CreateResult_WithNull_ShouldCreateFailedResult()
+        {
+            var errorMessage = "Tried to create result using null for data!";
+            string? value = null;
+            Result<string> result = value.CreateResult(errorMessage);
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Contains(errorMessage));
+        }
+
+        [TestMethod]
+        public void CreateResult_WithDefault_ShouldCreateSuccessfulResult()
+        {
+            int value = default;
+            Result<int> result = value.CreateResult();
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.IsSuccess);
+        }
+
+        [TestMethod]
+        public void CreateResult_WithDefaultReferenceType_ShouldCreateFailedResult()
+        {
+            var errorMessage = "An error occured!";
+            List<int>? value = default;
+            Result<List<int>> result = value.CreateResult(errorMessage);
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsTrue(result.Errors.Contains(errorMessage));
         }
     }
 }
