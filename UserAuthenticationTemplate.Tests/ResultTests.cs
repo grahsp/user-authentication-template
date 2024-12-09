@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel;
 using UserAuthenticationTemplate.Extensions;
 using UserAuthenticationTemplate.Models;
 
@@ -15,7 +14,7 @@ namespace UserAuthenticationTemplate.Tests
 
             Assert.IsTrue(result.IsSuccess);
             Assert.IsFalse(result.IsFailure);
-            Assert.IsFalse(result.Errors.Count > 0);
+            Assert.IsFalse(result.Errors.Length > 0);
         }
 
         [TestMethod]
@@ -59,7 +58,7 @@ namespace UserAuthenticationTemplate.Tests
 
             Assert.IsFalse(result.IsSuccess);
             Assert.IsTrue(result.IsFailure);
-            Assert.AreEqual(3, result.Errors.Count);
+            Assert.AreEqual(3, result.Errors.Length);
             Assert.IsTrue(result.Errors.Contains("Error 1"));
             Assert.IsTrue(result.Errors.Contains("Error 2"));
             Assert.IsTrue(result.Errors.Contains("Error 3"));
@@ -83,7 +82,7 @@ namespace UserAuthenticationTemplate.Tests
             var result = identityResult.ToResult();
 
             Assert.IsTrue(result.IsSuccess);
-            Assert.IsFalse(result.Errors.Count > 0);
+            Assert.IsFalse(result.Errors.Length > 0);
         }
 
         [TestMethod]
@@ -108,7 +107,7 @@ namespace UserAuthenticationTemplate.Tests
 
             Assert.IsTrue(result.IsSuccess);
             Assert.AreEqual(result.Data, value);
-            Assert.IsFalse(result.Errors.Count > 0);
+            Assert.IsFalse(result.Errors.Length > 0);
         }
 
         [TestMethod]
