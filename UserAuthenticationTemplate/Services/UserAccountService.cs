@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
 using UserAuthenticationTemplate.Configs.Identity;
+using UserAuthenticationTemplate.Logging;
 using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Services
@@ -23,12 +24,6 @@ namespace UserAuthenticationTemplate.Services
 
         public async Task<IdentityResult> RegisterUserAsync(RegistrationRequest request)
             {
-            if (!string.Equals(request.Password, request.ConfirmPassword))
-            {
-                _logger.LogWarning("Passwords did not match during registration attempt.");
-                return IdentityResult.Failed(new IdentityError { Description = "Passwords do not match." });
-            }
-
             var newUser = new ApplicationUser
             {
                 Email = request.Email
@@ -70,11 +65,13 @@ namespace UserAuthenticationTemplate.Services
 
         public async Task<IdentityResult> LoginUserAsync(LoginRequest request)
         {
-            var user = await FindUserAsync(request.Email);
-            if (user == null)
-            {
+            var userIdentifier = request.Email ?? request.UserName ?? throw new ArgumentNullException(nameof(request), "Both email and username cannot be left empty!");
+            
+            var findUserResult = await FindUserAsync(request);
+            if (findUserResult.IsFailure)
                 return IdentityResult.Failed(new IdentityError { Description = "Invalid login attempt." });
-            }
+
+            var user = findUserResult.Data;
 
             if (await IsUserLockedOutAsync(user))
             {
@@ -93,46 +90,48 @@ namespace UserAuthenticationTemplate.Services
             }
         }
 
-        private async Task<ApplicationUser?> FindUserAsync(string identifier)
+        private async Task<Result<ApplicationUser>> FindByEmailAsync(string email)
         {
-            if (string.IsNullOrEmpty(identifier))
-            {
-                _logger.LogError("Parameter identifier cannot be empty or null.");
-                return null;
-            }
-
             try
             {
-                ApplicationUser? user;
-                if (IsValidEmail(identifier))
-                {
-                    user = await _userManager.FindByEmailAsync(identifier);
-                    if (user == null)
-                        _logger.LogWarning("No user found with Email: '{Identifier}'", identifier);
-                }
-                else
-                {
-                    user = await _userManager.FindByNameAsync(identifier);
-                    if (user == null)
-                        _logger.LogWarning("No user found with Username: '{Identifier}'", identifier);
-                }
+                var user = await _userManager.FindByEmailAsync(email);
+                _logger.LogFindByEmailResult(user != null, email);
 
-                if (user != null)
-                    _logger.LogInformation("User found with ID '{UserId}'", user.Id);
-
-                return user;
+                return Result<ApplicationUser>.FromData(user, $"Could not find user with email '{email}'.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while trying to find user with identifier '{Identifier}'.", identifier);
-                return null;
+                _logger.LogFindByEmailResult(false, email, ex.Message);
+                return Result<ApplicationUser>.Failure(ex.Message);
             }
         }
 
-        private static bool IsValidEmail(string identifier)
+        private async Task<Result<ApplicationUser>> FindByNameAsync(string username)
         {
-            var emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            return Regex.IsMatch(identifier, emailPattern);
+            try
+            {
+                var user = await _userManager.FindByNameAsync(username);
+                _logger.LogFindByNameResult(user != null, username);
+
+                return Result<ApplicationUser>.FromData(user, $"Could not find user with username '{username}'.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogFindByNameResult(false, username, ex.Message);
+                return Result<ApplicationUser>.Failure(ex.Message);
+            }
+        }
+
+        private async Task<Result<ApplicationUser>> FindUserAsync(LoginRequest request)
+        {
+            if (request.Email != null)
+                return await FindByEmailAsync(request.Email);
+
+            if (request.UserName != null)
+                return await FindByNameAsync(request.UserName);
+
+            _logger.LogArgumentNull(nameof(request.Email), nameof(request.UserName));
+            return Result<ApplicationUser>.Failure("Request is missing email and username.");
         }
 
         private async Task<bool> CheckPasswordAsync(ApplicationUser user, string password)

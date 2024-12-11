@@ -34,7 +34,7 @@ namespace UserAuthenticationTemplate.Tests
         [TestMethod]
         public async Task RegisterUserAsync_ShouldFail_IfInvalidRequest()
         {
-            var result = await RegisterUserAsync("test@gmail.com", "test123", "incorrect password");
+            var result = await RegisterUserAsync("test@gmail.com", "test123");
 
             Assert.IsFalse(result.Succeeded);
         }
@@ -144,13 +144,12 @@ namespace UserAuthenticationTemplate.Tests
         #endregion
 
         #region Helper Methods
-        private async Task<IdentityResult> RegisterUserAsync(string email, string password, string? confirmPassword = null)
+        private async Task<IdentityResult> RegisterUserAsync(string email, string password)
         {
             var registrationRequest = new RegistrationRequest
             {
                 Email = email,
                 Password = password,
-                ConfirmPassword = confirmPassword ?? password
             };
 
             return await _userAccount.RegisterUserAsync(registrationRequest);
