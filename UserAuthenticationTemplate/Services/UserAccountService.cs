@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using System.Text.RegularExpressions;
 using UserAuthenticationTemplate.Configs.Identity;
+using UserAuthenticationTemplate.Extensions;
 using UserAuthenticationTemplate.Logging;
 using UserAuthenticationTemplate.Models;
 
@@ -65,8 +65,6 @@ namespace UserAuthenticationTemplate.Services
 
         public async Task<IdentityResult> LoginUserAsync(LoginRequest request)
         {
-            var userIdentifier = request.Email ?? request.UserName ?? throw new ArgumentNullException(nameof(request), "Both email and username cannot be left empty!");
-            
             var findUserResult = await FindUserAsync(request);
             if (findUserResult.IsFailure)
                 return IdentityResult.Failed(new IdentityError { Description = "Invalid login attempt." });
@@ -78,9 +76,9 @@ namespace UserAuthenticationTemplate.Services
                 return IdentityResult.Failed(new IdentityError { Description = "Your account is temporarily locked due to multiple failed login attempts. Please try again later." });
             }
 
-            if (await CheckPasswordAsync(user, request.Password))
+            var checkPasswordResult = await CheckPasswordAsync(user, request.Password);
+            if (checkPasswordResult.IsSuccess)
             {
-                // Success
                 return IdentityResult.Success;
             }
             else
@@ -134,26 +132,27 @@ namespace UserAuthenticationTemplate.Services
             return Result<ApplicationUser>.Failure("Request is missing email and username.");
         }
 
-        private async Task<bool> CheckPasswordAsync(ApplicationUser user, string password)
+        private async Task<Result> CheckPasswordAsync(ApplicationUser user, string password)
         {
+            if (user == null || (user.Email == null && user.UserName == null))
+            {
+                _logger.LogChecKPasswordResult(false, "UNKNOWN", "Missing a user identifier");
+                return Result.Failure("Missing a user identifier. Please provide a valid email or username.");
+            }
+
+            // Using null-forgiving operator because both email and username cannot be null here.
+            var userIdentifier = user.Email ?? user.UserName!;
             try
             {
-                var result = await _userManager.CheckPasswordAsync(user, password);
-                if (result)
-                {
-                    _logger.LogInformation("Successfully authenticated user with ID '{UserId}'.", user.Id);
-                }
-                else
-                {
-                    _logger.LogWarning("Incorrect password provided for user with ID '{UserId}'.", user.Id);
-                }
+                var isSuccess = await _userManager.CheckPasswordAsync(user, password);
+                _logger.LogChecKPasswordResult(isSuccess, userIdentifier, "Invalid password");
 
-                return result;
+                return isSuccess.ToResult("Invalid password");
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while comparing passwords for user with ID '{UserId}'.", user.Id);
-                return false;
+                _logger.LogChecKPasswordResult(false, userIdentifier, ex.Message);
+                return Result.Failure(ex.Message);
             }
         }
 
