@@ -134,14 +134,11 @@ namespace UserAuthenticationTemplate.Services
 
         private async Task<Result> CheckPasswordAsync(ApplicationUser user, string password)
         {
-            if (user == null || (user.Email == null && user.UserName == null))
-            {
-                _logger.LogChecKPasswordResult(false, "UNKNOWN", "Missing a user identifier");
-                return Result.Failure("Missing a user identifier. Please provide a valid email or username.");
-            }
+            var userIdentifierResult = GetUserIdentifier(user);
+            if (userIdentifierResult.IsFailure)
+                return userIdentifierResult.ToBase();
 
-            // Using null-forgiving operator because both email and username cannot be null here.
-            var userIdentifier = user.Email ?? user.UserName!;
+            var userIdentifier = userIdentifierResult.Data;
             try
             {
                 var isSuccess = await _userManager.CheckPasswordAsync(user, password);
@@ -152,31 +149,39 @@ namespace UserAuthenticationTemplate.Services
             catch(Exception ex)
             {
                 _logger.LogChecKPasswordResult(false, userIdentifier, ex.Message);
-                return Result.Failure(ex.Message);
+                return Result.Failure($"An error occurred trying to login.");
             }
         }
 
-        private async Task<bool> IsUserLockedOutAsync(ApplicationUser user)
+        private async Task<Result> IsUserLockedOutAsync(ApplicationUser user)
         {
+            var userIdentifierResult = GetUserIdentifier(user);
+            if (userIdentifierResult.IsFailure)
+                return userIdentifierResult.ToBase();
+
+            var userIdentifier = userIdentifierResult.Data;
             try
             {
-                var isLockedOut = await _userManager.IsLockedOutAsync(user) && LockoutEnabled;
-                if (isLockedOut)
+                // TODO: Enhance response and logging to differentiate between locked-out, suspended, or banned states 
+                // if functionality for suspensions or bans is implemented in the future.
+
+                if (LockoutEnabled)
                 {
-                    _logger.LogInformation("User with ID '{UserId}' is locked out.", user.Id);
-                }
-                else
-                {
-                    _logger.LogInformation("User with ID '{UserId}' is not locked out.", user.Id);
+                    _logger.LogInformation("User Lockout is disabled.");
+                    return Result.Success();
                 }
 
-                return isLockedOut;
+                // NOTE: The result is inverted because 'false' means the user is NOT locked out but result should be a success - confusing I know.
+                var IsUserLockedOut = await _userManager.IsLockedOutAsync(user);
+                IsUserLockedOut = !IsUserLockedOut;
+
+                _logger.LogIsLockedOutResult(IsUserLockedOut, userIdentifier);
+                return IsUserLockedOut.ToResult("User has been temporarily locked out. Try again later.");
             }
             catch (Exception ex)
             {
-                // This will allow blocked users in if an error occurs (change result type or re-throw)
-                _logger.LogError(ex, "An error occurred while checking lockout state for user with ID '{UserId}'.", user.Id);
-                return false;
+                _logger.LogIsLockedOutResult(false, userIdentifier, ex.Message);
+                return Result.Failure("An error occurred trying to login. Try again later.");
             }
         }
 
@@ -201,6 +206,24 @@ namespace UserAuthenticationTemplate.Services
                 _logger.LogError(ex, "An error occurred while accessing the failed login count for user with ID '{UserId}'.", user.Id);
                 return false;
             }
+        }
+
+        private Result<string> GetUserIdentifier(ApplicationUser user)
+        {
+            if (user == null)
+            {
+                _logger.LogArgumentNull(nameof(user));
+                return Result<string>.Failure("User is null. Please provide a valid user.");
+            }
+
+            if (string.IsNullOrEmpty(user.Email) && string.IsNullOrEmpty(user.UserName))
+            {
+                _logger.LogArgumentNull(nameof(user.Email), nameof(user.UserName));
+                return Result<string>.Failure("Missing a user identifier. Please provide a valid email or username.");
+            }
+
+            // Implicitly converts string into Result<string>
+            return user.UserName ?? user.Email ?? user.Id.ToString();
         }
     }
 }

@@ -131,18 +131,18 @@ namespace UserAuthenticationTemplate
         /// Logs the result of a lockout status check for a user.
         /// </summary>
         /// <param name="logger">The logger instance associated with <see cref="UserAccountService"/>.</param>
-        /// <param name="success">Indicates whether the user is not locked out.</param>
+        /// <param name="isUserLockedOut">Indicates whether the user is not locked out.</param>
         /// <param name="userIdentifier">A unique identifier for the user, such as a username or email.</param>
         /// <param name="errors">
         /// A string containing error messages if the lockout status could not be verified. This parameter is optional and defaults to an empty string.
         /// </param>
         /// <remarks>
         /// This method provides a simplified way to log the lockout status of a user by using the <c>IsLockedOutSuccess</c> and <c>IsLockedOutFailure</c> log methods.
-        /// Ensure the <paramref name="errors"/> parameter is provided when <paramref name="success"/> is <c>false</c>.
+        /// Ensure the <paramref name="errors"/> parameter is provided when <paramref name="isUserLockedOut"/> is <c>false</c>.
         /// </remarks>
-        public static void LogIsLockedOutResult(this ILogger<UserAccountService> logger, bool success, string userIdentifier, string errors = "")
+        public static void LogIsLockedOutResult(this ILogger<UserAccountService> logger, bool isUserLockedOut, string userIdentifier, string errors = "")
         {
-            if (success)
+            if (!isUserLockedOut)
                 IsLockedOutSuccess(logger, userIdentifier);
             else
                 IsLockedOutFailure(logger, userIdentifier, errors);
