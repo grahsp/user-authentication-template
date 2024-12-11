@@ -168,6 +168,15 @@
         }
 
         /// <summary>
+        /// Used to convert Result<T> incase you don't want to create a new Result and don't need the Data property.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Result"/> with the same properties of <see cref="Result{T}"/> besides data. 
+        /// </returns>
+        public Result ToBase()
+            => new(IsSuccess, Errors);
+
+        /// <summary>
         /// Implicitly converts a value of type <typeparamref name="T"/> into a successful <see cref="Result{T}"/>.
         /// </summary>
         /// <param name="data">The data to associate with the successful result.</param>
