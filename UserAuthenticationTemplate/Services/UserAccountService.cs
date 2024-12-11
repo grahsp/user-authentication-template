@@ -63,29 +63,31 @@ namespace UserAuthenticationTemplate.Services
             }
         }
 
-        public async Task<IdentityResult> LoginUserAsync(LoginRequest request)
+        public async Task<Result<LoginResponse>> LoginUserAsync(LoginRequest request)
         {
             var findUserResult = await FindUserAsync(request);
             if (findUserResult.IsFailure)
-                return IdentityResult.Failed(new IdentityError { Description = "Invalid login attempt." });
+                return Result<LoginResponse>.Failure(findUserResult.Errors);
 
             var user = findUserResult.Data;
 
-            if (await IsUserLockedOutAsync(user))
+            var lockoutResult = await IsUserLockedOutAsync(user);
+            if (lockoutResult.IsFailure)
+                return Result<LoginResponse>.Failure(lockoutResult.Errors);
+
+            var passwordResult = await CheckPasswordAsync(user, request.Password);
+            if (passwordResult.IsSuccess)
             {
-                return IdentityResult.Failed(new IdentityError { Description = "Your account is temporarily locked due to multiple failed login attempts. Please try again later." });
+                // -- Success --
+                return Result<LoginResponse>.Success(new LoginResponse());  // Placeholder
             }
 
-            var checkPasswordResult = await CheckPasswordAsync(user, request.Password);
-            if (checkPasswordResult.IsSuccess)
-            {
-                return IdentityResult.Success;
-            }
-            else
-            {
-                _ = await AccessFailedCountAsync(user);
-                return IdentityResult.Failed(new IdentityError { Description = "Invalid login attempt. Please check your username and password and try again." });
-            }
+            var failedCountResult = await AccessFailedCountAsync(user);
+            if (failedCountResult.IsFailure)
+                return Result<LoginResponse>.Failure(failedCountResult.Errors);
+
+            _logger.LogError("An unexpected error occurred trying to log user in.");
+            return Result<LoginResponse>.Failure("An unexpected error occurred!");
         }
 
         private async Task<Result<ApplicationUser>> FindByEmailAsync(string email)
