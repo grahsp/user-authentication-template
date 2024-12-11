@@ -185,26 +185,24 @@ namespace UserAuthenticationTemplate.Services
             }
         }
 
-        private async Task<bool> AccessFailedCountAsync(ApplicationUser user)
+        private async Task<Result> AccessFailedCountAsync(ApplicationUser user)
         {
+            var userIdentifierResult = GetUserIdentifier(user);
+            if (userIdentifierResult.IsFailure)
+                return userIdentifierResult.ToBase();
+
+            var userIdentifier = userIdentifierResult.Data;
             try
             {
                 var result = await _userManager.AccessFailedCountAsync(user);
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("Successfully retrieved failed login count for user with ID '{UserId}'.", user.Id);
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to retrieve failed login count for user with ID '{UserId}'.", user.Id);
-                }
+                _logger.LogAccessFailedCountResult(result.Succeeded, userIdentifier);
 
-                return result.Succeeded && LockoutEnabled;
+                return result.ToResult();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while accessing the failed login count for user with ID '{UserId}'.", user.Id);
-                return false;
+                _logger.LogAccessFailedCountResult(false, userIdentifier, ex.Message);
+                return Result.Failure("An error occurred trying to login. Try again later.");
             }
         }
 

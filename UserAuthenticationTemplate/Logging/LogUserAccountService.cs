@@ -150,10 +150,10 @@ namespace UserAuthenticationTemplate
         #endregion
 
         #region AccessFailedCount
-        [LoggerMessage(EventId = 111, Level = LogLevel.Information, Message = "Successfully got login count for user '{UserIdentifier}.")]
+        [LoggerMessage(EventId = 111, Level = LogLevel.Information, Message = "User '{UserIdentifier}' failed access count has increased.")]
         private static partial void AccessFailedCountSuccess(ILogger logger, string userIdentifier);
 
-        [LoggerMessage(EventId = 112, Level = LogLevel.Warning, Message = "Failed to get login count for user '{UserIdentifier}'. {Errors}")]
+        [LoggerMessage(EventId = 112, Level = LogLevel.Warning, Message = "An error occurred increasing user '{UserIdentifier}' failed access count. {Errors}")]
         private static partial void AccessFailedCountFailure(ILogger logger, string userIdentifier, string errors);
 
         /// <summary>
