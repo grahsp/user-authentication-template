@@ -9,48 +9,75 @@ namespace UserAuthenticationTemplate.Tests
     {
 
         #region ResultExtensions
+        // Result
         [TestMethod]
-        public void CreateResult_ReturnsSuccess_WhenDataIsNotNull()
+        public void ToResult_ReturnSuccess_WhenTrue()
+        {
+            var isSuccess = true;
+            var errorMessage = "This message should not be stored.";
+
+            var result = isSuccess.ToResult(errorMessage);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.HasErrors);
+        }
+
+        [TestMethod]
+        public void ToResult_ReturnFailed_WhenFalse()
+        {
+            var isSuccess = false;
+            var errorMessage = "This message will be stored in Errors.";
+
+            var result = isSuccess.ToResult(errorMessage);
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(result.Errors.Single(), errorMessage);
+        }
+
+        // Result<T>
+        [TestMethod]
+        public void ToResultT_ReturnSuccess_WhenDataIsNotNull()
         {
             var data = 42;
 
-            var result = data.CreateResult();
+            var result = data.ToResult("Error");
 
             Assert.IsTrue(result.IsSuccess);
             Assert.AreEqual(data, result.Data);
         }
 
         [TestMethod]
-        public void CreateResult_ReturnsFailure_WhenDataIsNull()
+        public void ToResultT_ReturnFailure_WhenDataIsNull()
         {
             int? data = null;
 
-            var result = data.CreateResult();
+            var result = data.ToResult("Error");
 
             Assert.IsTrue(result.IsFailure);
-            Assert.AreEqual("Data must not be null", result.Errors.Single());
+            Assert.AreEqual("Error", result.Errors.Single());
         }
 
         [TestMethod]
-        public void CreateResult_UsesCustomFailureMessage_WhenDataIsNull()
+        public void ToResultT_UseFailureMessage_WhenDataIsNull()
         {
             string? data = null;
             string errorMessage = "An error occured";
 
-            var result = data.CreateResult(errorMessage);
+            var result = data.ToResult(errorMessage);
 
             Assert.IsTrue(result.IsFailure);
             Assert.AreEqual(errorMessage, result.Errors.Single());
         }
 
         [TestMethod]
-        public void CreateResult_ReturnsSuccess_WithDifferentTypes()
+        public void ToResultT_ReturnSuccess_WithDifferentTypes()
         {
             var intData = 42;
             var stringData = "Hello, World!";
 
-            var intResult = intData.CreateResult();
-            var stringResult = stringData.CreateResult();
+            var intResult = intData.ToResult("Error");
+            var stringResult = stringData.ToResult("Error");
 
             Assert.IsTrue(intResult.IsSuccess);
             Assert.AreEqual(intData, intResult.Data);
