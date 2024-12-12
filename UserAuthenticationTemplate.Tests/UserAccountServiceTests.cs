@@ -224,7 +224,79 @@ namespace UserAuthenticationTemplate.Tests
         }
         #endregion
 
-        private Task<Result<RegisterResponse>> RegisterUserAsync(string email = "tester@gmail.com", string username = "AwesomeTester", string password = "8Toast")
+        #region User Registration Tests
+        [TestMethod]
+        public async Task RegisterUser_UserEmailAndUsernameAlreadyExists_FailureWithValidationError()
+        {
+            // Result1
+            var result1 = await RegisterUserAsync();
+            Assert.IsTrue(result1.IsSuccess);
+            Assert.IsFalse(result1.HasErrors);
+
+            var result2 = await RegisterUserAsync();
+            Assert.IsTrue(result2.IsFailure);
+            Assert.IsTrue(result2.HasErrors);
+            Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_UserEmailAlreadyExists_FailureWithValidationError()
+        {
+            // Result1
+            var result1 = await RegisterUserAsync(username: null);
+            Assert.IsTrue(result1.IsSuccess);
+            Assert.IsFalse(result1.HasErrors);
+
+            var result2 = await RegisterUserAsync(username: null);
+            Assert.IsTrue(result2.IsFailure);
+            Assert.IsTrue(result2.HasErrors);
+            Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_UserUsernameAlreadyExists_FailureWithValidationError()
+        {
+            // Result1
+            var result1 = await RegisterUserAsync(email: null);
+            Assert.IsTrue(result1.IsSuccess);
+            Assert.IsFalse(result1.HasErrors);
+
+            var result2 = await RegisterUserAsync(email: null);
+            Assert.IsTrue(result2.IsFailure);
+            Assert.IsTrue(result2.HasErrors);
+            Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailDifferentCapitalization_FailureWithValidationError()
+        {
+            // Result1
+            var result1 = await RegisterUserAsync(username: null, email: "TEST@GMAIL.COM");
+            Assert.IsTrue(result1.IsSuccess);
+            Assert.IsFalse(result1.HasErrors);
+
+            var result2 = await RegisterUserAsync(username: null, email: "test@gmail.com");
+            Assert.IsTrue(result2.IsFailure);
+            Assert.IsTrue(result2.HasErrors);
+            Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_UsernameDifferentCapitalization_FailureWithValidationError()
+        {
+            // Result1
+            var result1 = await RegisterUserAsync(username: "testuser", email: null);
+            Assert.IsTrue(result1.IsSuccess);
+            Assert.IsFalse(result1.HasErrors);
+
+            var result2 = await RegisterUserAsync(username: "TESTUSER", email: null);
+            Assert.IsTrue(result2.IsFailure);
+            Assert.IsTrue(result2.HasErrors);
+            Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+        #endregion
+
+        private Task<Result<RegisterResponse>> RegisterUserAsync(string? email = "tester@gmail.com", string? username = "AwesomeTester", string password = "8Toast")
         {
             var user = new RegistrationRequest
             {
