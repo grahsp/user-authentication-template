@@ -109,6 +109,16 @@ namespace UserAuthenticationTemplate.Tests
         #region Password Validation Tests
         // Password Required Length
         [TestMethod]
+        public async Task RegisterUser_PasswordTooLong_FailureWithValidationResult()
+        {
+            var result = await RegisterUserAsync(password: new string('a', 255) + 'b');
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("password too long", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
         public async Task RegisterUser_PasswordMeetsLengthRequirement_Success()
         {
             _identityConfig.Password.RequiredLength = 6;
@@ -244,7 +254,7 @@ namespace UserAuthenticationTemplate.Tests
         }
         #endregion
 
-        #region User Registration Tests
+        #region Invalid Request Data Tests
         [TestMethod]
         public async Task RegisterUser_UserEmailAndUsernameAlreadyExists_FailureWithValidationError()
         {
@@ -313,6 +323,36 @@ namespace UserAuthenticationTemplate.Tests
             Assert.IsTrue(result2.IsFailure);
             Assert.IsTrue(result2.HasErrors);
             Assert.IsTrue(result2.Errors.Any(e => e.Contains("user already exists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_MissingEmailAndUsername_FaillureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: null, username: null);
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("provide a valid email or username", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_UsernameExceedsMaximumLength_FailureWithValidationError()
+        {
+            var longUsername = new string('a', 256);
+
+            var result = await RegisterUserAsync(username: longUsername);
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("username too long", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailExceedsMaximumLength_FailureWithValidationError()
+        {
+            var longEmail = new string('a', 256) + "@example.com";
+
+            var result = await RegisterUserAsync(email: longEmail);
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("email too long", StringComparison.OrdinalIgnoreCase)));
         }
         #endregion
 

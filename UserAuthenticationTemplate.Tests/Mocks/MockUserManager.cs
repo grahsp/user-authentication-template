@@ -23,6 +23,9 @@ namespace UserAuthenticationTemplate.Tests.Mocks
 
         public Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
         {
+            if (user == null)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Missing user data" }));
+
             var userExists = _users.Exists(u => u.Email == user.Email || u.UserName == u.UserName);
             if (userExists)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "User already exists!" }));
@@ -45,6 +48,15 @@ namespace UserAuthenticationTemplate.Tests.Mocks
             var uniqueChars = new HashSet<char>(password);
             if (uniqueChars.Count < _identityConfig.Password.RequiredUniqueChars)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = $"Password requires atleast {_identityConfig.Password.RequiredUniqueChars} unique characters!" }));
+
+            if (user.Email?.Length > 255)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Email too long" }));
+
+            if (user.UserName?.Length > 255)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Username too long" }));
+
+            if (password.Length > 255)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Password too long" }));
 
             user.Id = Guid.NewGuid();
             user.PasswordHash = password;
