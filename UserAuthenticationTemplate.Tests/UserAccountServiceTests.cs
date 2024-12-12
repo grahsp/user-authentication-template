@@ -35,6 +35,7 @@ namespace UserAuthenticationTemplate.Tests
         }
 
         #region Email Validation Tests
+        // FIX: basic data validation only checks for '@'. Implement a more robust validation for email.
         [TestMethod]
         public async Task RegisterUser_EmailValid_Success()
         {
@@ -57,14 +58,13 @@ namespace UserAuthenticationTemplate.Tests
         [TestMethod]
         public async Task RegisterUser_EmailMultipleAt_FailureWithValidationError()
         {
-            var result = await RegisterUserAsync(email: "failed@test@gmail.com");
+            var result = await RegisterUserAsync(email: "test@@gmail.com");
 
             Assert.IsTrue(result.IsFailure);
             Assert.IsTrue(result.HasErrors);
             Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
         }
 
-        // FIX: basic data validation only checks for '@'. Implement a more robust validation for email.
         [TestMethod]
         public async Task RegisterUser_EmailMissingDot_FailureWithValidationError()
         {
@@ -78,7 +78,27 @@ namespace UserAuthenticationTemplate.Tests
         [TestMethod]
         public async Task RegisterUser_EmailContainInvalidCharacter_FailureWithValidationError()
         {
-            var result = await RegisterUserAsync(email: "test!@gmail?.com");
+            var result = await RegisterUserAsync(email: "test!@gmail.com");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailStartWithAt_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "@gmail.com");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailAtFollowbedByDot_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "test@.com");
 
             Assert.IsTrue(result.IsFailure);
             Assert.IsTrue(result.HasErrors);
