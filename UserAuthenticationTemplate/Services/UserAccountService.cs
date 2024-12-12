@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Extensions;
 using UserAuthenticationTemplate.Logging;
@@ -7,59 +6,48 @@ using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Services
 {
-    public class UserAccountService
+    public class UserAccountService(IUserManager<ApplicationUser> userManager, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
     {
-        private readonly IUserManager<ApplicationUser> _userManager;
-        private readonly ILogger<UserAccountService> _logger;
-        private readonly IdentityConfig _identityConfig;
+        private readonly IUserManager<ApplicationUser> _userManager = userManager;
+        private readonly ILogger<UserAccountService> _logger = logger;
+        private readonly IdentityConfig _identityConfig = identityConfig.Value;
 
         private bool LockoutEnabled => _identityConfig.Lockout.Enabled;
 
-        public UserAccountService(IUserManager<ApplicationUser> userManager, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
-        {
-            _userManager = userManager;
-            _logger = logger;
-            _identityConfig = identityConfig.Value;
-        }
 
-        public async Task<IdentityResult> RegisterUserAsync(RegistrationRequest request)
+        public async Task<Result<RegisterResponse>> RegisterUserAsync(RegistrationRequest request)
+        {
+            var userToRegister = new ApplicationUser
             {
-            var newUser = new ApplicationUser
-            {
-                Email = request.Email
+                Email = request.Email,
+                UserName = request.UserName ?? request.Email,
             };
 
-            // Handle success vs failure here..
-            var result = await CreateAsync(newUser, request.Password);
+            var createResult = await CreateAsync(userToRegister, request.Password);
+            if (createResult.IsFailure)
+                return Result<RegisterResponse>.Failure(createResult.Errors);
 
-            return result;
+            return Result<RegisterResponse>.Success(new RegisterResponse());  // Placeholder
         }
 
-        private async Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
+        private async Task<Result> CreateAsync(ApplicationUser user, string password)
         {
+            var userIdentifierResult = GetUserIdentifier(user);
+            if (userIdentifierResult.IsFailure)
+                return userIdentifierResult.ToBase();
+
+            var userIdentifier = userIdentifierResult.Data;
             try
             {
-                var result = await _userManager.CreateAsync(user, password);
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("User with ID '{UserId}' successfully created.", user.Id);
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to create user with ID '{UserId}'", user.Id);
+                var identityResult = await _userManager.CreateAsync(user, password);
+                _logger.LogCreateUserResult(identityResult.Succeeded, userIdentifier);
 
-                    foreach (var error in result.Errors)
-                    {
-                        _logger.LogWarning(" - {ErrorDescription}", error.Description);
-                    }
-                }
-
-                return result;
+                return identityResult.ToResult();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while trying to create user with ID '{UserId}'.", user.Id);
-                return IdentityResult.Failed(new IdentityError { Description = "An error occurred while creating your account. Please try again later." });
+                _logger.LogCreateUserResult(false, userIdentifier, ex.Message);
+                return Result.Failure("An error occurred trying to register user.");
             }
         }
 
