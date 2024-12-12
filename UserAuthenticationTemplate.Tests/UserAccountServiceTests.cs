@@ -34,6 +34,58 @@ namespace UserAuthenticationTemplate.Tests
             _userAccount = new(userManager, _logger, Options.Create(_identityConfig));
         }
 
+        #region Email Validation Tests
+        [TestMethod]
+        public async Task RegisterUser_EmailValid_Success()
+        {
+            var result = await RegisterUserAsync();
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailMissingAt_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "testgmail.com");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailMultipleAt_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "failed@test@gmail.com");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // FIX: basic data validation only checks for '@'. Implement a more robust validation for email.
+        [TestMethod]
+        public async Task RegisterUser_EmailMissingDot_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "test@gmailcom");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task RegisterUser_EmailContainInvalidCharacter_FailureWithValidationError()
+        {
+            var result = await RegisterUserAsync(email: "test!@gmail?.com");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(e => e.Contains("invalid email address", StringComparison.OrdinalIgnoreCase)));
+        }
+        #endregion
+
         #region Password Validation Tests
         // Password Required Length
         [TestMethod]
