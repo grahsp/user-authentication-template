@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.Text.RegularExpressions;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Models;
 using UserAuthenticationTemplate.Services;
@@ -22,9 +23,28 @@ namespace UserAuthenticationTemplate.Tests.Mocks
 
         public Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
         {
-            var userExists = _users.Exists(u => u.Email == user.Email);
+            var userExists = _users.Exists(u => u.Email == user.Email || u.UserName == u.UserName);
             if (userExists)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "User already exists!" }));
+
+            if (password.Length < _identityConfig.Password.RequiredLength)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = $"Password must be atleast {_identityConfig.Password.RequiredLength} characters long!" }));
+
+            if (_identityConfig.Password.RequireLowercase && !Regex.IsMatch(password, "[a-z]"))
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Password requires a lowercase character!" }));
+
+            if (_identityConfig.Password.RequireUppercase && !Regex.IsMatch(password, "[A-Z]"))
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Password requires a uppercase character!" }));
+
+            if (_identityConfig.Password.RequireDigit && !Regex.IsMatch(password, "[0-9]"))
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Password requires a digit!" }));
+
+            if (_identityConfig.Password.RequireNonAlphanumeric && !Regex.IsMatch(password, "[^a-zA-Z0-9]"))
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Password requires a non-alphanumeric character!" }));
+
+            var uniqueChars = new HashSet<char>(password);
+            if (uniqueChars.Count < _identityConfig.Password.RequiredUniqueChars)
+                return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = $"Password requires atleast {_identityConfig.Password.RequiredUniqueChars} unique characters!" }));
 
             user.Id = Guid.NewGuid();
             user.PasswordHash = password;
