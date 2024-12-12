@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Azure.Core;
+using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Extensions;
 using UserAuthenticationTemplate.Logging;
@@ -17,6 +19,10 @@ namespace UserAuthenticationTemplate.Services
 
         public async Task<Result<RegisterResponse>> RegisterUserAsync(RegistrationRequest request)
         {
+            var validationResult = ValidateRequest(request);
+            if (validationResult.IsFailure)
+                return Result<RegisterResponse>.Failure(validationResult.Errors);
+
             var userToRegister = new ApplicationUser
             {
                 Email = request.Email,
@@ -40,7 +46,7 @@ namespace UserAuthenticationTemplate.Services
             try
             {
                 var identityResult = await _userManager.CreateAsync(user, password);
-                _logger.LogCreateUserResult(identityResult.Succeeded, userIdentifier);
+                _logger.LogCreateUserResult(identityResult.Succeeded, userIdentifier, string.Join(", ", identityResult.Errors.Select(e => e.Description)));
 
                 return identityResult.ToResult();
             }
@@ -53,6 +59,10 @@ namespace UserAuthenticationTemplate.Services
 
         public async Task<Result<LoginResponse>> LoginUserAsync(LoginRequest request)
         {
+            var validationResult = ValidateRequest(request);
+            if (validationResult.IsFailure)
+                return Result<LoginResponse>.Failure(validationResult.Errors);
+
             var findUserResult = await FindUserAsync(request);
             if (findUserResult.IsFailure)
                 return Result<LoginResponse>.Failure(findUserResult.Errors);
@@ -212,6 +222,27 @@ namespace UserAuthenticationTemplate.Services
 
             // Implicitly converts string into Result<string>
             return user.UserName ?? user.Email ?? user.Id.ToString();
+        }
+
+        private Result ValidateRequest<T>(T request)
+        {
+            if (request == null)
+            {
+                _logger.LogArgumentNull(nameof(request));
+                return Result.Failure("Request was null.");
+            }
+
+            var validationResults = new List<ValidationResult>();
+            var validationContext = new ValidationContext(request);
+
+            if (!Validator.TryValidateObject(request, validationContext, validationResults, true))
+            {
+                var errors = validationResults.Select(v => v.ErrorMessage ?? "").ToArray();
+                _logger.LogValidationFailed(typeof(T).Name, errors);
+                return Result.Failure(errors);
+            }
+
+            return Result.Success();
         }
     }
 }
