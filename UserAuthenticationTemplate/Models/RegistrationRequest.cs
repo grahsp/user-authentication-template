@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using UserAuthenticationTemplate.Attributes;
 
 namespace UserAuthenticationTemplate.Models
 {
     public class RegistrationRequest
     {
-        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        [EmailValidation]
         public string? Email { get; set; }
 
         public string? UserName { get; set; }
