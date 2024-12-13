@@ -26,6 +26,12 @@ namespace UserAuthenticationTemplate.Tests
                     RequireNonAlphanumeric = false,
                     RequiredLength = 0,
                     RequiredUniqueChars = 0,
+                },
+                Lockout = new LockoutConfig
+                {
+                    AllowedForNewUsers = true,
+                    DefaultLockoutInMinutes = 1,
+                    MaxFailedAccessAttempts = 3
                 }
             };
 
@@ -356,6 +362,63 @@ namespace UserAuthenticationTemplate.Tests
         }
         #endregion
 
+        #region LoginUser Request Data Tests
+        [TestMethod]
+        public async Task LoginUser_WithValidRequest_Success()
+        {
+            _ = await RegisterUserAsync();
+
+            var loginResult = await LoginUserAsync();
+
+            Assert.IsTrue(loginResult.IsSuccess);
+            Assert.IsFalse(loginResult.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_WithCapitalizedEmail_Success()
+        {
+            _ = await RegisterUserAsync(email: "tester@gmail.com");
+
+            var loginResult = await LoginUserAsync(email: "TESTER@GMAIL.COM");
+
+            Assert.IsTrue(loginResult.IsSuccess);
+            Assert.IsFalse(loginResult.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_WithCapitalizedUsername_Success()
+        {
+            _ = await RegisterUserAsync(username: "AwesomeTester");
+
+            var loginResult = await LoginUserAsync(username: "AWESOMETESTER");
+
+            Assert.IsTrue(loginResult.IsSuccess);
+            Assert.IsFalse(loginResult.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_WithUnregisteredUser_FailureWithError()
+        {
+            var loginResult = await LoginUserAsync();
+
+            Assert.IsTrue(loginResult.IsFailure);
+            Assert.IsTrue(loginResult.HasErrors);
+            Assert.IsTrue(loginResult.Errors.Any(e => e.Contains("could not find user", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task LoginUser_InvalidPassword_FailureWithError()
+        {
+            _ = await RegisterUserAsync(password: "test");
+
+            var loginResult = await LoginUserAsync(password: "tes");
+
+            Assert.IsTrue(loginResult.IsFailure);
+            Assert.IsTrue(loginResult.HasErrors);
+            Assert.IsTrue(loginResult.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+        }
+        #endregion
+
         private Task<Result<RegisterResponse>> RegisterUserAsync(string? email = "tester@gmail.com", string? username = "AwesomeTester", string password = "8Toast")
         {
             var user = new RegistrationRequest
@@ -366,6 +429,18 @@ namespace UserAuthenticationTemplate.Tests
             };
 
             return _userAccount.RegisterUserAsync(user);
+        }
+
+        private Task<Result<LoginResponse>> LoginUserAsync(string? email = "tester@gmail.com", string? username = "AwesomeTester", string password = "8Toast")
+        {
+            var user = new LoginRequest
+            {
+                Email = email,
+                UserName = username,
+                Password = password
+            };
+
+            return _userAccount.LoginUserAsync(user);
         }
     }
 }

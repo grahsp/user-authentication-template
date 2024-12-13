@@ -79,13 +79,14 @@ namespace UserAuthenticationTemplate.Services
                 // -- Success --
                 return Result<LoginResponse>.Success(new LoginResponse());  // Placeholder
             }
+            else
+            {
+                var failedCountResult = await AccessFailedCountAsync(user);
+                if (failedCountResult.IsFailure)
+                    return Result<LoginResponse>.Failure(failedCountResult.Errors);
 
-            var failedCountResult = await AccessFailedCountAsync(user);
-            if (failedCountResult.IsFailure)
-                return Result<LoginResponse>.Failure(failedCountResult.Errors);
-
-            _logger.LogError("An unexpected error occurred trying to log user in.");
-            return Result<LoginResponse>.Failure("An unexpected error occurred!");
+                return Result<LoginResponse>.Failure(passwordResult.Errors);
+            }
         }
 
         private async Task<Result<ApplicationUser>> FindByEmailAsync(string email)

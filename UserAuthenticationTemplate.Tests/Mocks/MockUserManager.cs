@@ -67,7 +67,7 @@ namespace UserAuthenticationTemplate.Tests.Mocks
 
         public Task<ApplicationUser?> FindByEmailAsync(string email)
         {
-            var user = _users.FirstOrDefault(u => u.Email == email);
+            var user = _users.FirstOrDefault(u => string.Compare(u.Email, email, StringComparison.OrdinalIgnoreCase) == 0);
             return Task.FromResult(user);
         }
 
@@ -79,7 +79,7 @@ namespace UserAuthenticationTemplate.Tests.Mocks
 
         public Task<ApplicationUser?> FindByNameAsync(string username)
         {
-            var user = _users.FirstOrDefault(u => u.UserName == username);
+            var user = _users.FirstOrDefault(u => string.Compare(u.UserName, username, StringComparison.OrdinalIgnoreCase) == 0);
             return Task.FromResult(user);
         }
 
