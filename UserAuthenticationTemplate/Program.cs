@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Text;
 using UserAuthenticationTemplate.Configs;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Data;
 using UserAuthenticationTemplate.Models;
+using UserAuthenticationTemplate.Services;
 
 namespace UserAuthenticationTemplate
 {
@@ -17,19 +19,13 @@ namespace UserAuthenticationTemplate
             // -- Service --
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Configuration.AddUserSecrets<Program>();
+
             // Configurations
             var identityConfigurationSection = builder.Configuration.GetSection("Identity");
             builder.Services.Configure<IdentityConfig>(identityConfigurationSection);
             var jwtConfigurationSection = builder.Configuration.GetSection("Jwt");
             builder.Services.Configure<JwtConfig>(jwtConfigurationSection);
-
-            // This should be removed before moving to production and content inside of
-            // appsettings.Secret.json Should be stored in a more secure way.
-            builder.Configuration
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.Secret.json", optional: false, reloadOnChange: true);
-
-
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -98,6 +94,7 @@ namespace UserAuthenticationTemplate
                 };
             });
 
+            builder.Services.AddScoped<JwtService>();
 
             // -- Middleware --
             var app = builder.Build();
