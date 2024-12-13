@@ -419,6 +419,134 @@ namespace UserAuthenticationTemplate.Tests
         }
         #endregion
 
+        #region User Lockout Tests
+        [TestMethod]
+        public async Task LoginUser_CanLoginAfterFailedAttempts_Success()
+        {
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 5;
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 3;
+            _ = await RegisterUserAsync(password: "test");
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts - 1; i++)
+            {
+                var loginResult1 = await LoginUserAsync(password: "tes");
+                Assert.IsTrue(loginResult1.IsFailure);
+                Assert.IsTrue(loginResult1.HasErrors);
+                Assert.IsTrue(loginResult1.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var loginResult2 = await LoginUserAsync(password: "test");
+            Assert.IsTrue(loginResult2.IsSuccess);
+            Assert.IsFalse(loginResult2.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_LockoutAfterFailedLoginAttempts_FailureWithError()
+        {
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 5;
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _ = await RegisterUserAsync(password: "test");
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts; i++)
+            {
+                var loginResult1 = await LoginUserAsync(password: "tes");
+                Assert.IsTrue(loginResult1.IsFailure);
+                Assert.IsTrue(loginResult1.HasErrors);
+                Assert.IsTrue(loginResult1.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var loginResult2 = await LoginUserAsync(password: "test");
+            Assert.IsTrue(loginResult2.IsFailure);
+            Assert.IsTrue(loginResult2.HasErrors);
+            Assert.IsTrue(loginResult2.Errors.Any(e => e.Contains("user has been temporarily locked out", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task LoginUser_FailedAccessCountResetOnSuccessfulLogin_Success()
+        {
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 5;
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _ = await RegisterUserAsync(password: "test");
+
+            for (var i = 0; i < 3; i++)
+            {
+                for (var j = 0; j < _identityConfig.Lockout.MaxFailedAccessAttempts - 1; j++)
+                {
+                    var loginResult1 = await LoginUserAsync(password: "tes");
+                    Assert.IsTrue(loginResult1.IsFailure);
+                    Assert.IsTrue(loginResult1.HasErrors);
+                    Assert.IsTrue(loginResult1.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+                }
+
+                var loginResult2 = await LoginUserAsync(password: "test");
+                Assert.IsTrue(loginResult2.IsSuccess);
+                Assert.IsFalse(loginResult2.HasErrors);
+            }
+        }
+
+        [TestMethod]
+        public async Task LoginUser_LockoutShouldExpireAndResetAfterFailedAccess_Success()
+        {
+            _identityConfig.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMilliseconds(500);
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _ = await RegisterUserAsync(password: "test");
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts + 1; i++)
+            {
+                var loginResult1 = await LoginUserAsync(password: "tes");
+                Assert.IsTrue(loginResult1.IsFailure);
+                Assert.IsTrue(loginResult1.HasErrors);
+            }
+
+            Thread.Sleep(_identityConfig.Lockout.DefaultLockoutTimeSpan);
+
+            var loginResult2 = await LoginUserAsync(password: "test");
+            Assert.IsTrue(loginResult2.IsSuccess);
+            Assert.IsFalse(loginResult2.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_LockoutDoesNotAffectOtherUsers_Success()
+        {
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 5;
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 2;
+            _ = await RegisterUserAsync(password: "test");
+            _ = await RegisterUserAsync(email: "otherTester@gmail.com", username: "BadTester", password: "test");
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts; i++)
+            {
+                var loginResult1 = await LoginUserAsync(password: "tes");
+                Assert.IsTrue(loginResult1.IsFailure);
+                Assert.IsTrue(loginResult1.HasErrors);
+                Assert.IsTrue(loginResult1.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var loginResult2 = await LoginUserAsync(email: "otherTester@gmail.com", password: "test");
+            Assert.IsTrue(loginResult2.IsSuccess);
+            Assert.IsFalse(loginResult2.HasErrors);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_NoLockoutIfDisabled_Success()
+        {
+            _identityConfig.Lockout.DefaultLockoutInMinutes = 0;
+            _identityConfig.Lockout.MaxFailedAccessAttempts = 0;
+            _ = await RegisterUserAsync(password: "test");
+
+            for (var i = 0; i < _identityConfig.Lockout.MaxFailedAccessAttempts + 1; i++)
+            {
+                var loginResult1 = await LoginUserAsync(password: "tes");
+                Assert.IsTrue(loginResult1.IsFailure);
+                Assert.IsTrue(loginResult1.HasErrors);
+                Assert.IsTrue(loginResult1.Errors.Any(e => e.Contains("invalid password", StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var loginResult2 = await LoginUserAsync(password: "test");
+            Assert.IsTrue(loginResult2.IsSuccess);
+            Assert.IsFalse(loginResult2.HasErrors);
+        }
+        #endregion
+
         private Task<Result<RegisterResponse>> RegisterUserAsync(string? email = "tester@gmail.com", string? username = "AwesomeTester", string password = "8Toast")
         {
             var user = new RegistrationRequest
