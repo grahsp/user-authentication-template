@@ -26,7 +26,7 @@ namespace UserAuthenticationTemplate.Tests.Mocks
             if (user == null)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Missing user data" }));
 
-            var userExists = _users.Exists(u => u.Email == user.Email || u.UserName == u.UserName);
+            var userExists = _users.Exists(u => string.Compare(u.Email, user.Email, StringComparison.OrdinalIgnoreCase) == 0 || string.Compare(u.UserName, user.UserName, StringComparison.OrdinalIgnoreCase) == 0);
             if (userExists)
                 return Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "User already exists!" }));
 
@@ -106,6 +106,13 @@ namespace UserAuthenticationTemplate.Tests.Mocks
             var selectUser = await FindByEmailAsync(user.Email!);
 
             return selectUser?.LockoutEnd > DateTime.Now;
+        }
+
+        public Task<IdentityResult> ResetAccessFailedCountAsync(ApplicationUser user)
+        {
+            user.AccessFailedCount = 0;
+
+            return Task.FromResult(IdentityResult.Success);
         }
     }
 }

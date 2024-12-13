@@ -142,7 +142,7 @@ namespace UserAuthenticationTemplate
         /// </remarks>
         public static void LogIsLockedOutResult(this ILogger<UserAccountService> logger, bool isUserLockedOut, string userIdentifier, string errors = "")
         {
-            if (!isUserLockedOut)
+            if (isUserLockedOut)
                 IsLockedOutSuccess(logger, userIdentifier);
             else
                 IsLockedOutFailure(logger, userIdentifier, errors);

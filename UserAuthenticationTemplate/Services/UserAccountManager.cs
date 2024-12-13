@@ -56,10 +56,5 @@ namespace UserAuthenticationTemplate.Services
         {
             return _userManager.ResetAccessFailedCountAsync(user);
         }
-
-        public Task<IdentityResult> SetLockoutEndDateAsync(ApplicationUser user, DateTimeOffset? lockoutEnd)
-        {
-            return _userManager.SetLockoutEndDateAsync(user, lockoutEnd);
-        }
     }
 }

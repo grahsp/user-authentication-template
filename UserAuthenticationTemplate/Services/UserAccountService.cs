@@ -77,6 +77,10 @@ namespace UserAuthenticationTemplate.Services
             if (passwordResult.IsSuccess)
             {
                 // -- Success --
+                var resetResult = await _userManager.ResetAccessFailedCountAsync(user);
+                if (resetResult.ToResult().IsFailure)
+                    return Result<LoginResponse>.Failure();
+
                 return Result<LoginResponse>.Success(new LoginResponse());  // Placeholder
             }
             else
@@ -166,7 +170,7 @@ namespace UserAuthenticationTemplate.Services
                 // TODO: Enhance response and logging to differentiate between locked-out, suspended, or banned states 
                 // if functionality for suspensions or bans is implemented in the future.
 
-                if (LockoutEnabled)
+                if (!LockoutEnabled)
                 {
                     _logger.LogInformation("User Lockout is disabled.");
                     return Result.Success();

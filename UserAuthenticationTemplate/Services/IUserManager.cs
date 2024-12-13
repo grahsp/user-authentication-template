@@ -15,5 +15,6 @@ namespace UserAuthenticationTemplate.Services
         // Lockout
         Task<bool> IsLockedOutAsync(TUser user);
         Task<IdentityResult> AccessFailedCountAsync(TUser user);
+        Task<IdentityResult> ResetAccessFailedCountAsync(TUser user);
     }
 }
