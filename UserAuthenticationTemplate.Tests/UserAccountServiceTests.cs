@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using UserAuthenticationTemplate.Configs;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Models;
 using UserAuthenticationTemplate.Services;
@@ -13,6 +14,7 @@ namespace UserAuthenticationTemplate.Tests
         private readonly UserAccountService _userAccount;
         private readonly ILogger<UserAccountService> _logger;
         private readonly IdentityConfig _identityConfig;
+        private readonly JwtConfig _jwtConfig;
 
         public UserAccountServiceTests()
         {
@@ -35,9 +37,14 @@ namespace UserAuthenticationTemplate.Tests
                 }
             };
 
+            _jwtConfig = new JwtConfig
+            {
+                Secret = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabba",
+            };
+
             var userManager = new MockUserManager(_identityConfig);
             _logger = new MockLogger<UserAccountService>();
-            _userAccount = new(userManager, _logger, Options.Create(_identityConfig));
+            _userAccount = new(userManager, new JwtService(Options.Create(_jwtConfig)), _logger, Options.Create(_identityConfig));
         }
 
         #region Email Validation Tests
@@ -544,6 +551,32 @@ namespace UserAuthenticationTemplate.Tests
             var loginResult2 = await LoginUserAsync(password: "test");
             Assert.IsTrue(loginResult2.IsSuccess);
             Assert.IsFalse(loginResult2.HasErrors);
+        }
+        #endregion
+
+        #region Login Response Tests
+        [TestMethod]
+        public async Task LoginUser_WhenFailure_ReturnNoAccessToken()
+        {
+            _ = await RegisterUserAsync();
+
+            var result = await LoginUserAsync(password: "invalid password");
+
+            Assert.IsTrue(result.IsFailure);
+            Assert.IsTrue(result.HasErrors);
+            Assert.ThrowsException<ArgumentNullException>(() => result.Data);
+        }
+
+        [TestMethod]
+        public async Task LoginUser_WhenSuccess_ReturnAccessToken()
+        {
+            _ = await RegisterUserAsync();
+
+            var result = await LoginUserAsync();
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsFalse(result.HasErrors);
+            Assert.IsNotNull(result.Data.AccessToken);
         }
         #endregion
 
