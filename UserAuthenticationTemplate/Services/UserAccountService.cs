@@ -1,6 +1,7 @@
-﻿using Azure.Core;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using UserAuthenticationTemplate.Configs.Identity;
 using UserAuthenticationTemplate.Extensions;
 using UserAuthenticationTemplate.Logging;
@@ -8,9 +9,10 @@ using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Services
 {
-    public class UserAccountService(IUserManager<ApplicationUser> userManager, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
+    public class UserAccountService(IUserManager<ApplicationUser> userManager, JwtService jwtService, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
     {
         private readonly IUserManager<ApplicationUser> _userManager = userManager;
+        private readonly JwtService _jwtService = jwtService;
         private readonly ILogger<UserAccountService> _logger = logger;
         private readonly IdentityConfig _identityConfig = identityConfig.Value;
 
@@ -81,7 +83,13 @@ namespace UserAuthenticationTemplate.Services
                 if (resetResult.ToResult().IsFailure)
                     return Result<LoginResponse>.Failure();
 
-                return Result<LoginResponse>.Success(new LoginResponse());  // Placeholder
+                var claims = new List<Claim> {
+                    new(JwtRegisteredClaimNames.Sub, user.Id.ToString())
+                };
+
+                var accessToken = _jwtService.GenerateToken(claims);
+
+                return Result<LoginResponse>.Success(new LoginResponse { AccessToken = accessToken });
             }
             else
             {
