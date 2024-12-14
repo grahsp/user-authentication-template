@@ -1,10 +1,10 @@
 ﻿namespace UserAuthenticationTemplate.Shared.Enums
 {
-    public enum JwtError
+    public enum SecurityError
     {
         InvalidToken,
         ExpiredToken,
         InvalidConfiguration,
-        UnknownError,
+        UnexpectedError,
     }
 }
