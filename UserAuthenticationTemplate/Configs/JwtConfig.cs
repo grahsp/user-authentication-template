@@ -33,6 +33,11 @@
             set => _expiresInMinutes = value > 0 ? value : 0;
         }
 
+        public DateTime Expires
+        {
+            get => DateTime.Now + TimeSpan.FromMinutes(_expiresInMinutes);
+        }
+
         public int ClockSkewInMinutes
         {
             get => (int)Math.Ceiling(ClockSkew.TotalMinutes);
