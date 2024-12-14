@@ -34,7 +34,7 @@ namespace UserAuthenticationTemplate
             });
 
             #region Register Services
-            builder.Services.AddScoped<JwtService>();
+            builder.Services.AddScoped<ITokenService, JwtService>();
             builder.Services.AddScoped<IUserManager<ApplicationUser>, UserAccountManager>();
             builder.Services.AddScoped<UserAccountService>();
 

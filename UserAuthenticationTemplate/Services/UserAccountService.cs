@@ -9,10 +9,10 @@ using UserAuthenticationTemplate.Models;
 
 namespace UserAuthenticationTemplate.Services
 {
-    public class UserAccountService(IUserManager<ApplicationUser> userManager, JwtService jwtService, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
+    public class UserAccountService(IUserManager<ApplicationUser> userManager, ITokenService tokenService, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
     {
         private readonly IUserManager<ApplicationUser> _userManager = userManager;
-        private readonly JwtService _jwtService = jwtService;
+        private readonly ITokenService _tokenService = tokenService;
         private readonly ILogger<UserAccountService> _logger = logger;
         private readonly IdentityConfig _identityConfig = identityConfig.Value;
 
@@ -87,9 +87,11 @@ namespace UserAuthenticationTemplate.Services
                     new(JwtRegisteredClaimNames.Sub, user.Id.ToString())
                 };
 
-                var accessToken = _jwtService.GenerateToken(claims);
+                var generatedTokenResult = _tokenService.GenerateToken(claims);
+                if (generatedTokenResult.IsFailure)
+                    return Result<LoginResponse>.Failure(generatedTokenResult.ErrorMessages);
 
-                return Result<LoginResponse>.Success(new LoginResponse { AccessToken = accessToken });
+                return Result<LoginResponse>.Success(new LoginResponse { AccessToken = generatedTokenResult.Token });
             }
             else
             {
