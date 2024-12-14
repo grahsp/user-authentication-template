@@ -3,13 +3,8 @@
     public enum JwtError
     {
         InvalidToken,
-        InvalidAudience,
-        InvalidIssuer,
         ExpiredToken,
-        MissingToken,
-        InvalidClaim,
-        SignatureValidationFailed,
-        MalformedToken,
+        InvalidConfiguration,
         UnknownError,
     }
 }
