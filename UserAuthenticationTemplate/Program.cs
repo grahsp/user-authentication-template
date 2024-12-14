@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics;
 using System.Text;
 using UserAuthenticationTemplate.Configs;
 using UserAuthenticationTemplate.Configs.Identity;
@@ -16,22 +15,33 @@ namespace UserAuthenticationTemplate
     {
         public static void Main(string[] args)
         {
-            // -- Service --
+            // -- Service Configuration -- //
             var builder = WebApplication.CreateBuilder(args);
 
+            #region Configuration
             builder.Configuration.AddUserSecrets<Program>();
 
-            // Configurations
             var identityConfigurationSection = builder.Configuration.GetSection("Identity");
             builder.Services.Configure<IdentityConfig>(identityConfigurationSection);
             var jwtConfigurationSection = builder.Configuration.GetSection("Jwt");
             builder.Services.Configure<JwtConfig>(jwtConfigurationSection);
+            #endregion
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
+                // IMPORTANT: Change connection string to whatever name you've saved it as!
                 options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityDbConnectionString"));
             });
 
+            #region Register Services
+            builder.Services.AddScoped<JwtService>();
+            builder.Services.AddScoped<IUserManager<ApplicationUser>, UserAccountManager>();
+            builder.Services.AddScoped<UserAccountService>();
+
+            builder.Services.AddControllers();
+            #endregion
+
+            #region Identity Setup
             builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
             {
                 var identityConfig = identityConfigurationSection.Get<IdentityConfig>() ?? new IdentityConfig();
@@ -67,8 +77,9 @@ namespace UserAuthenticationTemplate
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+            #endregion
 
-
+            #region Authentication Setup
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -94,14 +105,19 @@ namespace UserAuthenticationTemplate
                 };
             });
 
-            builder.Services.AddScoped<JwtService>();
+            builder.Services.AddAuthorization();
+            #endregion
 
-            // -- Middleware --
+
+            // -- Middleware Configuration -- //
             var app = builder.Build();
 
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllers();
 
             app.Run();
         }
