@@ -16,6 +16,7 @@ namespace UserAuthenticationTemplate
 
             builder.Configuration.AddUserSecrets<Program>();
 
+            builder.Services.AddRequiredServices<ApplicationUser>();
             builder.Services.AddControllers();
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>

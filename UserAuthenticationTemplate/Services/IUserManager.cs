@@ -2,7 +2,7 @@
 
 namespace UserAuthenticationTemplate.Services
 {
-    public interface IUserManager<TUser>
+    public interface IUserManager<TUser> where TUser : class
     {
         Task<IdentityResult> CreateAsync(TUser user, string password);
         Task<bool> CheckPasswordAsync(TUser user, string password);

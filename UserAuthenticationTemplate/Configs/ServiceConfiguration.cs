@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using UserAuthenticationTemplate.Configs.Identity;
-using UserAuthenticationTemplate.Models;
 using UserAuthenticationTemplate.Services;
 
 namespace UserAuthenticationTemplate.Configs
@@ -68,10 +67,10 @@ namespace UserAuthenticationTemplate.Configs
             };
         }
 
-        public static void RegisterRequiredServices(this IServiceCollection services)
+        public static void AddRequiredServices<TUser>(this IServiceCollection services) where TUser : class
         {
             services.AddScoped<ITokenService, JwtService>();
-            services.AddScoped<IUserManager<ApplicationUser>, UserAccountManager>();
+            services.AddScoped<IUserManager<TUser>, UserAccountManager<TUser>>();
             services.AddScoped<UserAccountService>();
         }
     }
