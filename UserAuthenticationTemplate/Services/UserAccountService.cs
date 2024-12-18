@@ -10,6 +10,7 @@ using UserAuthenticationTemplate.Models;
 namespace UserAuthenticationTemplate.Services
 {
     public class UserAccountService(IUserManager<ApplicationUser> userManager, ITokenService tokenService, ILogger<UserAccountService> logger, IOptions<IdentityConfig> identityConfig)
+        : IUserService
     {
         private readonly IUserManager<ApplicationUser> _userManager = userManager;
         private readonly ITokenService _tokenService = tokenService;
